@@ -11,6 +11,9 @@
 #include "../General/Thread.h"
 #include "../General/Mutex.h"
 #include "../General/Lock.h"
+#include <cstdlib>
+#include <stdint.h>
+#include <unistd.h>
 
 #define SOCKET_PORT			30000
 

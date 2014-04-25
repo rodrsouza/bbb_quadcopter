@@ -10,103 +10,104 @@
 #include <cstring>
 #include <cstdio>
 #include <unistd.h>
+#include <stdint.h>
 
-PWM::PWM()
+PWM::PWM(int frequency)
 {
+	frequency_ = frequency;
 }
 
-bool PWM::Initialize()
+void PWM::Initialize()
 {
-	int enginePeriod = ENGINE_PERIOD;
+	uint32_t enginePeriod = ENGINE_PERIOD(frequency_);
 
 	char buf[70];
 
 	//Initializing the pwm module
 	system("echo am33xx_pwm > /sys/devices/bone_capemgr.8/slots");
-	sleep(2);
+	sleep(1);
 
 	//Configure pins to be used like pwm pins
-	system("echo bone_pwm_P8_34 > /sys/devices/bone_capemgr.8/slots");
-	sleep(2);
+	system("echo sc_pwm_P8_34 > /sys/devices/bone_capemgr.8/slots");
+	sleep(1);
 
-	system("echo bone_pwm_P8_36 > /sys/devices/bone_capemgr.8/slots");
-	sleep(2);
+	system("echo sc_pwm_P8_36 > /sys/devices/bone_capemgr.8/slots");
+	sleep(1);
 
-	system("echo bone_pwm_P8_45 > /sys/devices/bone_capemgr.8/slots");
-	sleep(2);
+	system("echo sc_pwm_P8_45 > /sys/devices/bone_capemgr.8/slots");
+	sleep(1);
 
-	system("echo bone_pwm_P8_46 > /sys/devices/bone_capemgr.8/slots");
-	sleep(2);
+	system("echo sc_pwm_P8_46 > /sys/devices/bone_capemgr.8/slots");
+	sleep(1);
 
 	//Configure frequency for each pin
 	memset(buf, '\0', sizeof(buf));
 
 	sprintf(buf, "echo %d > /sys/devices/ocp.2/pwm_test_P8_34.11/period", enginePeriod);
-	printf(buf);
 	system(buf);
 
 	memset(buf, '\0', sizeof(buf));
 
 	sprintf(buf, "echo %d > /sys/devices/ocp.2/pwm_test_P8_36.12/period", enginePeriod);
-	printf(buf);
 	system(buf);
 
 	memset(buf, '\0', sizeof(buf));
 
 	sprintf(buf, "echo %d > /sys/devices/ocp.2/pwm_test_P8_45.13/period", enginePeriod);
-	printf(buf);
 	system(buf);
 
 	memset(buf, '\0', sizeof(buf));
 
 	sprintf(buf, "echo %d > /sys/devices/ocp.2/pwm_test_P8_46.14/period", enginePeriod);
-	printf(buf);
 	system(buf);
-	sleep(1);
-	//Force turn off
-	/*
-	system("echo 0 > /sys/devices/ocp.2/pwm_test_P8_34.11/duty");
-	usleep(1000);
-	system("echo 0 > /sys/devices/ocp.2/pwm_test_P8_36.12/duty");
-	system("echo 0 > /sys/devices/ocp.2/pwm_test_P8_45.13/duty");
-	system("echo 0 > /sys/devices/ocp.2/pwm_test_P8_46.14/duty");
-*/
+
+	//Adjusting polarity
+	system("echo 0 > /sys/devices/ocp.2/pwm_test_P8_34.11/polarity");
+	system("echo 0 > /sys/devices/ocp.2/pwm_test_P8_36.12/polarity");
+	system("echo 0 > /sys/devices/ocp.2/pwm_test_P8_45.13/polarity");
+	system("echo 0 > /sys/devices/ocp.2/pwm_test_P8_46.14/polarity");
+
+	//Turn on individual modules
+	system("echo 1 > /sys/devices/ocp.2/pwm_test_P8_34.11/run");
+	system("echo 1 > /sys/devices/ocp.2/pwm_test_P8_36.12/run");
+	system("echo 1 > /sys/devices/ocp.2/pwm_test_P8_45.13/run");
+	system("echo 1 > /sys/devices/ocp.2/pwm_test_P8_46.14/run");
 }
 
-PWM::~PWM() {
-	// TODO Auto-generated destructor stub
+PWM::~PWM()
+{
 }
 
-void PWM::front(int duty_cycle)
+void PWM::front(uint32_t duty_period)
 {
 	char buf[70];
-	unsigned int duty_period = (ENGINE_PERIOD*duty_cycle)/100;
 
 	sprintf(buf, "echo %d > /sys/devices/ocp.2/pwm_test_P8_34.11/duty", duty_period);
+	system(buf);
 }
 
-void PWM::left(int duty_cycle)
+void PWM::back(uint32_t duty_period)
 {
 	char buf[70];
-	unsigned int duty_period = (ENGINE_PERIOD*duty_cycle)/100;
 
 	sprintf(buf, "echo %d > /sys/devices/ocp.2/pwm_test_P8_36.12/duty", duty_period);
+	system(buf);
 }
 
-void PWM::right(int duty_cycle)
+void PWM::left(uint32_t duty_period)
 {
 	char buf[70];
-	unsigned int duty_period = (ENGINE_PERIOD*duty_cycle)/100;
 
 	sprintf(buf, "echo %d > /sys/devices/ocp.2/pwm_test_P8_45.13/duty", duty_period);
+	system(buf);
 }
 
-void PWM::back(int duty_cycle)
+void PWM::right(uint32_t duty_period)
 {
 	char buf[70];
-	unsigned int duty_period = (ENGINE_PERIOD*duty_cycle)/100;
 
 	sprintf(buf, "echo %d > /sys/devices/ocp.2/pwm_test_P8_46.14/duty", duty_period);
+	system(buf);
 }
 
 

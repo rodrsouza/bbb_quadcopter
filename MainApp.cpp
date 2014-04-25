@@ -9,11 +9,11 @@
 #include <stdio.h>
 #include <Defs.h>
 //#include "Comunication/Socket/SocketInterface.h"
-#include "Hardware/PWM.h"
+#include "Hardware/ESC.h"
 
 int main()
 {
-	PWM pwm;
+	ESC esc;
 	char c;
 	int x;
 //	printf("Iniciando socket...\n\n");
@@ -31,16 +31,18 @@ int main()
 //			m_socketserver->SendMessage(data);
 //		}
 //	}
-	pwm.Initialize();
+	esc.InitializePWM();
 
 	do
 	{
 
-	printf("PWM Test\n\n");
+	printf("ESC Test\n\n");
 	printf("1- frente\n");
 	printf("2- traz\n");
 	printf("3- esquerda\n");
 	printf("4- direita\n");
+	printf("5- Fade test\n");
+	printf("6- Initialize\n");
 	printf("0- Sair\n");
 
 
@@ -56,25 +58,50 @@ int main()
 		{
 			case '1':
 			{
-				pwm.front(x);
+				esc.front(x);
 			}
 			break;
 
 			case '2':
 			{
-				pwm.back(x);
+				esc.back(x);
 			}
 			break;
 
 			case '3':
 			{
-				pwm.left(x);
+				//pwm.left(5.263F);
+				esc.left(x);
 			}
 			break;
 
 			case '4':
 			{
-				pwm.right(x);
+				esc.right(x);
+			}
+			break;
+
+			case '5':
+			{
+				float i=0;
+
+				while(1)
+				{
+					esc.left(i);
+					esc.right(100-i);
+
+					i+=10;
+					if(i>=100)
+						i = 0;
+
+					usleep(10000);
+				}
+			}
+			break;
+
+			case '6':
+			{
+				esc.InitializeESC();
 			}
 			break;
 		}
