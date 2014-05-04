@@ -76,13 +76,18 @@ bool SerialHW::set_attributes()
 	}
 }
 
-SerialHW::SerialHW(const char* serial_port, int baudrate, int parity) :
+SerialHW::SerialHW(const char* serial_port, BaudRate baud, int parity) :
 		port_name_(serial_port)
 {
-	initialize();
+	initialize(baud);
 }
 
-void SerialHW::initialize()
+SerialHW::~SerialHW()
+{
+	close_port();
+}
+
+void SerialHW::initialize(BaudRate baud)
 {
 	serial_pointer_ = open (port_name_, O_RDWR | O_NOCTTY | O_SYNC);
 	if (serial_pointer_ < 0)
@@ -91,18 +96,27 @@ void SerialHW::initialize()
 	}
 	else
 	{
-		set_interface_attribs(B19200);  // set speed to 115,200 bps, 8n1 (no parity)
+		set_interface_attribs(baud);  // set speed to 115,200 bps, 8n1 (no parity)
 		set_blocking(false);
 	}
 }
 
-int SerialHW::write_data(void* buf, int size)
+void SerialHW::close_port()
 {
-	return write(serial_pointer_, buf, size);
+	if(serial_pointer_ != NULL)
+	{
+		close(serial_pointer_);
+	}
 }
 
-int SerialHW::read_data(void* buf, int size)
+
+bool SerialHW::write_data(void* buf, int size)
 {
-	return read(serial_pointer_, buf, size);
+	return (write(serial_pointer_, buf, size) == size);
+}
+
+bool SerialHW::read_data(void* buf, int size)
+{
+	return (read(serial_pointer_, buf, size) == size);
 }
 

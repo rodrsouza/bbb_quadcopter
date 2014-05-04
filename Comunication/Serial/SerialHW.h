@@ -10,22 +10,32 @@
 
 #include <termios.h>
 
+
+typedef enum BaudRate
+{
+	Baud9600	= B9600,
+	Baud19200	= B19200,
+	Baud115200	= B115200
+};
+
 class SerialHW
 {
 public:
-	SerialHW(const char* serial_port, int baudrate, int parity = 0);
+	SerialHW(const char* serial_port, BaudRate baud, int parity = 0);
 
 	~SerialHW();
 
-	int write_data(void* buf, int size);
+	bool write_data(void* buf, int size);
 
-	int read_data(void* buf, int size);
+	bool read_data(void* buf, int size);
 
 	void set_blocking(bool should_block, int timeout_100ms = 5);
 
+	void close_port();
+
 private:
 	bool set_interface_attribs(int baudrate, int parity = 0);
-	void initialize();
+	void initialize(BaudRate baud);
 
 	bool get_attributes();
 	bool set_attributes();

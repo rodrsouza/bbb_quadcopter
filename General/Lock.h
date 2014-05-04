@@ -28,7 +28,7 @@ public:
 	 * be available. false: Tries to lock, but if the lock is busy it will
 	 * not block the thread.
 	 */
-	explicit Lock(Mutex& aMutex, bool aWaitUntilBeLocked);
+	explicit Lock(Mutex& aMutex, bool aWaitUntilBeLocked = true);
 
 	/**
 	 *    If the mutex is locked at the end of the scope the destructor will unlock it.
@@ -48,7 +48,7 @@ public:
 	const bool IsLocked() const;
 
 
-	const bool LockAgain(bool aWaitUntilBeLocked);
+	const bool LockAgain(bool aWaitUntilBeLocked = true);
 
 
 private:

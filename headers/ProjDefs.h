@@ -5,8 +5,8 @@
  *      Author: rodrigo
  */
 
-#ifndef PROJDEFS_H_
-#define PROJDEFS_H_
+#ifndef _PROJDEFS_H_
+#define _PROJDEFS_H_
 
 #include "../General/Thread.h"
 #include "../General/Mutex.h"
@@ -28,4 +28,4 @@ typedef struct
 
 
 
-#endif /* PROJDEFS_H_ */
+#endif /* _PROJDEFS_H_ */
