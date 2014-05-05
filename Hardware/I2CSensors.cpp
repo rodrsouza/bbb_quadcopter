@@ -6,12 +6,13 @@
  */
 
 #include "I2CSensors.h"
+#include "../General/Lock.h"
 
 I2CSensors::I2CSensors() :
 	Thread(SENSORS_PRIORITY, SCHED_RR),
 	i2c_driver(0)
 {
-	memset(MS561101_prom, 0, sizeof(MS561101_prom));
+	clean_all();
 }
 
 I2CSensors::~I2CSensors()
@@ -80,9 +81,9 @@ bool I2CSensors::configure_mpu6050()
 	espected_number = 4;
 	buffer[0] = 0x1A;
 	buffer[1] = 0x00;
-	buffer[2] = 0x18;
-	buffer[3] = 0x10;
-	write(i2c_driver, buffer, espected_number);
+	buffer[2] = 0x18; // Gyro = 2000 degrees/s
+	buffer[3] = 0x10; // Accel = +-8g
+	do_number = write(i2c_driver, buffer, espected_number);
 	usleep(1000);
 
 	result &= espected_number == do_number;
@@ -132,17 +133,35 @@ bool I2CSensors::configure_MS561101BA()
 							static_cast<uint16_t>(buffer[1]);
 		usleep(10000);
 	}
+
+	return result;
 }
 
-bool I2CSensors::set_i2c_address(int address)
+void I2CSensors::clean_all()
 {
-	return static_cast<bool>(ioctl(i2c_driver, I2C_SLAVE, address) > 0);
+	Lock lock_acc(acc_mutex);
+	Lock lock_gyro(gyro_mutex);
+
+	memset(&accelerometer_, 0, sizeof(accelerometer_));
+	memset(&gyroscope_, 0, sizeof(gyroscope_));
+	memset(MS561101_prom, 0, sizeof(MS561101_prom));
 }
 
 void* I2CSensors::Run()
 {
 	while(!Should_Stop())
 	{
+		(void)set_i2c_address(MPU6050_ADDRESS);
 
+		if(!read_and_store_acc_gyro())
+		{
+			printf("I2CSensors: read and store acc//gyro error.\n");
+		}
+
+		usleep(700);
+
+		(void)set_i2c_address(MS561101BA_ADDESS);
+
+		read_temp_pressure();
 	}
 }
