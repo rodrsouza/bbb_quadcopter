@@ -49,14 +49,43 @@
 
 #define OSR MS561101BA_OSR_4096
 
+#define MS561101BA_PRESSURE_CMD    	(MS561101BA_PRESSURE + OSR)
+#define MS561101BA_TEMPERATURE_CMD	(MS561101BA_TEMPERATURE + OSR)
+#define MS561101BA_ADC_READ_CMD    	0x00
+
 #pragma pack(1)
 
 union data16
 {
-	uint8_t lsb;
-	uint8_t msb;
+	int16_t data;
+	struct
+	{
+		uint8_t lsb;
+		uint8_t msb;
+	};
 };
 
+union udata16
+{
+	uint16_t data;
+	struct
+	{
+		uint8_t lsb;
+		uint8_t msb;
+	};
+};
+
+union udata32
+{
+	uint32_t data;
+	struct
+	{
+		uint8_t data0;
+		uint8_t data1;
+		uint8_t data2;
+		uint8_t data3;
+	};
+};
 
 struct ACC_RAW
 {
@@ -67,9 +96,9 @@ struct ACC_RAW
 
 struct GYRO_RAW
 {
-	union data16 X;
-	union data16 Y;
-	union data16 Z;
+	union udata16 X;
+	union udata16 Y;
+	union udata16 Z;
 };
 
 
@@ -87,8 +116,17 @@ public:
 
 	void get_gyro(void* gyro_struct);
 
+	uint32_t get_pressure();
+
+	uint32_t get_temperature();
+
 private:
+	void close_file_descriptor();
+
+	void clean_all();
+
 	void* Run();
+
 
 	bool read_and_store_acc_gyro();
 
@@ -96,15 +134,28 @@ private:
 
 	void store_gyro(uint8_t* buf_w_readings);
 
-	bool read_temp_pressure();
 
-	void clean_all();
+	bool start_pressure_conversion();
 
-	bool set_i2c_address(int address);
+	bool read_and_store_pressure();
+
+	void store_pressure(uint32_t data_read);
+
+
+	bool start_temperature_conversion();
+
+	bool read_and_store_temperature();
+
+	void store_temperature(uint32_t data_read);
+
+
+	void set_i2c_address(int address);
 
 	bool configure_mpu6050();
 
 	bool configure_MS561101BA();
+
+private:
 
 	int i2c_driver;
 
@@ -115,12 +166,18 @@ private:
 	GYRO_RAW gyroscope_;
 
 	uint16_t MS561101_prom[8];
+
+	Mutex temp_mutex;
+	uint32_t temperature;
+
+	Mutex press_mutex;
+	uint32_t pressure;
 };
 
 
-inline bool I2CSensors::set_i2c_address(int address)
+inline void I2CSensors::set_i2c_address(int address)
 {
-	return (ioctl(i2c_driver, I2C_SLAVE, address) > 0);
+	ioctl(i2c_driver, I2C_SLAVE_FORCE, address);
 }
 
 inline bool I2CSensors::read_and_store_acc_gyro()
@@ -195,9 +252,114 @@ inline void I2CSensors::get_gyro(void* gyro_struct)
 }
 
 
-inline bool I2CSensors::read_temp_pressure()
+inline bool I2CSensors::start_pressure_conversion()
 {
+	uint8_t command;
+	int done;
 
+	bool result = true;
+
+	command = MS561101BA_PRESSURE_CMD;
+	done = write(i2c_driver, &command, sizeof(command));
+	result &= (done == sizeof(command));
+
+	return result;
+}
+
+inline bool I2CSensors::read_and_store_pressure()
+{
+	union udata32 read_data;
+	uint8_t temp_buf[3];
+
+	uint8_t command;
+	int done;
+
+	bool result = true;
+
+	command = MS561101BA_ADC_READ_CMD;
+	done = write(i2c_driver, &command, sizeof(command));
+	result &= (done == sizeof(command));
+
+	done = read(i2c_driver, temp_buf, sizeof(temp_buf));
+	result &= (done == sizeof(temp_buf));
+
+	read_data.data0 = temp_buf[2];
+	read_data.data1 = temp_buf[1];
+	read_data.data2 = temp_buf[0];
+	read_data.data3 = 0;
+
+	store_pressure(read_data.data);
+
+	return result;
+}
+
+inline void I2CSensors::store_pressure(uint32_t read_data)
+{
+	Lock lock(press_mutex);
+
+	pressure = read_data;
+}
+
+inline uint32_t I2CSensors::get_pressure()
+{
+	Lock lock(press_mutex);
+
+	return pressure;
+}
+
+inline bool I2CSensors::start_temperature_conversion()
+{
+	uint8_t command;
+	int done;
+
+	bool result = true;
+
+	command = MS561101BA_TEMPERATURE_CMD;
+	done = write(i2c_driver, &command, sizeof(command));
+	result &= (done == sizeof(command));
+
+	return result;
+}
+
+inline bool I2CSensors::read_and_store_temperature()
+{
+	union udata32 read_data;
+	uint8_t temp_buf[3];
+
+	uint8_t command;
+	int done;
+
+	bool result = true;
+
+	command = MS561101BA_ADC_READ_CMD;
+	done = write(i2c_driver, &command, sizeof(command));
+	result &= (done == sizeof(command));
+
+	done = read(i2c_driver, temp_buf, sizeof(temp_buf));
+	result &= (done == sizeof(temp_buf));
+
+	read_data.data0 = temp_buf[2];
+	read_data.data1 = temp_buf[1];
+	read_data.data2 = temp_buf[0];
+	read_data.data3 = 0;
+
+	store_temperature(read_data.data);
+
+	return result;
+}
+
+inline void I2CSensors::store_temperature(uint32_t read_data)
+{
+	Lock lock(temp_mutex);
+
+	temperature = read_data;
+}
+
+inline uint32_t I2CSensors::get_temperature()
+{
+	Lock lock(temp_mutex);
+
+	return temperature;
 }
 
 #endif /* I2CSENSORS_H_ */

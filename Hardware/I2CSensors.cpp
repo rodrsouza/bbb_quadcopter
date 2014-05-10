@@ -7,20 +7,26 @@
 
 #include "I2CSensors.h"
 #include "../General/Lock.h"
+#include <unistd.h>
 
 I2CSensors::I2CSensors() :
 	Thread(SENSORS_PRIORITY, SCHED_RR),
 	i2c_driver(0)
 {
 	clean_all();
+
+	open_and_configure();
 }
 
 I2CSensors::~I2CSensors()
 {
+	close_file_descriptor();
 }
 
 bool I2CSensors::open_and_configure()
 {
+	bool result;
+
 	i2c_driver = open(I2C_INTERFACE, O_RDWR);
 
 	if(i2c_driver < 0)
@@ -36,21 +42,29 @@ bool I2CSensors::open_and_configure()
 		{
 			printf("MPU6050 configurado.\n");
 
-			if( configure_MS561101BA() )
-			{
-				printf("MS561101BA configurado.\n");
-			}
-			else
-			{
-				printf("Falha ao configurar MPU6050.\n");
-				return false;
-			}
+			result = true;
 		}
 		else
 		{
 			printf("Falha ao configurar MPU6050.\n");
-			return false;
+
+			result = false;
 		}
+
+		if( configure_MS561101BA() )
+		{
+			printf("MS561101BA configurado.\n");
+
+			result = true;
+		}
+		else
+		{
+			printf("Falha ao configurar MS561101BA.\n");
+
+			result = false;
+		}
+
+		return result;
 	}
 }
 
@@ -63,20 +77,20 @@ bool I2CSensors::configure_mpu6050()
 	buffer[0] = 0x6B;
 	buffer[1] = 0x80; //Reset device
 
-	result &= set_i2c_address(MPU6050_ADDRESS);
+	set_i2c_address(MPU6050_ADDRESS);
 
 	espected_number = 2;
 	do_number = write(i2c_driver, buffer, espected_number); //Reset device
 	usleep(10000);
 
-	result &= espected_number == do_number;
+	result &= (espected_number == do_number);
 
 	buffer[0] = 0x6B;
 	buffer[1] = 0x0B; // Reset = 0 Cycle = 0 Temp_dis = 1  PLL with gyroscope Z reference
 	do_number = write(i2c_driver, buffer, espected_number);
 	usleep(1000);
 
-	result &= espected_number == do_number;
+	result &= (espected_number == do_number);
 
 	espected_number = 4;
 	buffer[0] = 0x1A;
@@ -86,7 +100,7 @@ bool I2CSensors::configure_mpu6050()
 	do_number = write(i2c_driver, buffer, espected_number);
 	usleep(1000);
 
-	result &= espected_number == do_number;
+	result &= (espected_number == do_number);
 
 	return result;
 }
@@ -108,11 +122,13 @@ bool I2CSensors::configure_MS561101BA()
 
 	do_number = write(i2c_driver, buffer, espected_number);
 
-	result &= espected_number == do_number;
+	result &= (espected_number == do_number);
 
 	usleep(10000);
 
-	for(i = 0; i < sizeof(MS561101_prom); ++i)
+	size_t size = sizeof(MS561101_prom)/sizeof(uint16_t);
+
+	for(i = 0; i < size; ++i)
 	{
 		prom_command = static_cast<uint8_t>(MS561101BA_PROM_MASK + (i << 1));
 
@@ -121,13 +137,13 @@ bool I2CSensors::configure_MS561101BA()
 		do_number = write(i2c_driver, &prom_command, espected_number);
 		usleep(10000);
 
-		result &= espected_number == do_number;
+		result &= (espected_number == do_number);
 
 		espected_number = 2;
 
 		do_number = read(i2c_driver, &buffer, espected_number);
 
-		result &= espected_number == do_number;
+		result &= (espected_number == do_number);
 
 		MS561101_prom[i] = (static_cast<uint16_t>(buffer[0]) << 8) +
 							static_cast<uint16_t>(buffer[1]);
@@ -147,21 +163,67 @@ void I2CSensors::clean_all()
 	memset(MS561101_prom, 0, sizeof(MS561101_prom));
 }
 
+void I2CSensors::close_file_descriptor()
+{
+	if(i2c_driver)
+	{
+		close(i2c_driver);
+	}
+}
+
 void* I2CSensors::Run()
 {
+	int i;
+	bool temp_press = false;
+
+	(void)set_i2c_address(MS561101BA_ADDESS);
+
 	while(!Should_Stop())
 	{
-		(void)set_i2c_address(MPU6050_ADDRESS);
-
-		if(!read_and_store_acc_gyro())
+		if(temp_press)
 		{
-			printf("I2CSensors: read and store acc//gyro error.\n");
+			if(!start_pressure_conversion())
+			{
+				printf("I2CSensors: start pressure conversion error.\n");
+			}
+		}
+		else
+		{
+			if(!start_temperature_conversion())
+			{
+				printf("I2CSensors: start pressure conversion error.\n");
+			}
 		}
 
-		usleep(700);
+		(void)set_i2c_address(MPU6050_ADDRESS);
+
+		for(i=0; i<5; ++i)
+		{
+			if(!read_and_store_acc_gyro())
+			{
+				printf("I2CSensors: read and store acc/gyro error.\n");
+			}
+
+			usleep(100);
+		}
 
 		(void)set_i2c_address(MS561101BA_ADDESS);
 
-		read_temp_pressure();
+		if(temp_press)
+		{
+			if(!read_and_store_pressure())
+			{
+				printf("I2CSensors: read and store pressure error.\n");
+			}
+		}
+		else
+		{
+			if(!read_and_store_temperature())
+			{
+				printf("I2CSensors: read and store temperature error.\n");
+			}
+		}
+
+		temp_press = !temp_press;
 	}
 }
