@@ -171,15 +171,28 @@ void I2CSensors::close_file_descriptor()
 	}
 }
 
+void I2CSensors::get_prom_coef(PROM_COEF* p_struct)
+{
+	memmove(p_struct, &MS561101_prom[1], (sizeof(MS561101_prom)-(2*sizeof(uint16_t))) );
+
+//	printf("Prom coef\n");
+//	printf("C1: %d\n", p_struct->C1);
+//	printf("C2: %d\n", p_struct->C2);
+//	printf("C3: %d\n", p_struct->C3);
+//	printf("C4: %d\n", p_struct->C4);
+//	printf("C5: %d\n", p_struct->C5);
+//	printf("C6: %d\n", p_struct->C6);
+}
+
 void* I2CSensors::Run()
 {
 	int i;
-	bool temp_press = false;
-
-	(void)set_i2c_address(MS561101BA_ADDESS);
+	bool temp_press = true;
 
 	while(!Should_Stop())
 	{
+		(void)set_i2c_address(MS561101BA_ADDESS);
+
 		if(temp_press)
 		{
 			if(!start_pressure_conversion())
@@ -197,7 +210,7 @@ void* I2CSensors::Run()
 
 		(void)set_i2c_address(MPU6050_ADDRESS);
 
-		for(i=0; i<5; ++i)
+		for(i=0; i<12; ++i)
 		{
 			if(!read_and_store_acc_gyro())
 			{
@@ -225,5 +238,17 @@ void* I2CSensors::Run()
 		}
 
 		temp_press = !temp_press;
+
+		(void)set_i2c_address(MPU6050_ADDRESS);
+
+		for(i=0; i<3; ++i)
+		{
+			if(!read_and_store_acc_gyro())
+			{
+				printf("I2CSensors: read and store acc/gyro error.\n");
+			}
+
+			usleep(100);
+		}
 	}
 }

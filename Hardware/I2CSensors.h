@@ -87,11 +87,23 @@ union udata32
 	};
 };
 
+struct PROM_COEF
+{
+	uint16_t C1;
+	uint16_t C2;
+	uint16_t C3;
+	uint16_t C4;
+	uint16_t C5;
+	uint16_t C6;
+};
+
 struct ACC_RAW
 {
 	union data16 X;
 	union data16 Y;
 	union data16 Z;
+
+	clock_t clocks;
 };
 
 struct GYRO_RAW
@@ -99,6 +111,8 @@ struct GYRO_RAW
 	union udata16 X;
 	union udata16 Y;
 	union udata16 Z;
+
+	clock_t clocks;
 };
 
 
@@ -115,6 +129,8 @@ public:
 	void get_acc(void* acc_struct);
 
 	void get_gyro(void* gyro_struct);
+
+	void get_prom_coef(PROM_COEF* p_struct);
 
 	uint32_t get_pressure();
 
@@ -182,7 +198,8 @@ inline void I2CSensors::set_i2c_address(int address)
 
 inline bool I2CSensors::read_and_store_acc_gyro()
 {
-	uint8_t temp_buf[6];
+	uint8_t temp_acc[] = {0,0,0,0,0,0};
+	uint8_t temp_gyro[] = {0,0,0,0,0,0};;
 	uint8_t command;
 	int done;
 
@@ -192,19 +209,19 @@ inline bool I2CSensors::read_and_store_acc_gyro()
 	done = write(i2c_driver, &command, sizeof(command));
 	result &= (done == sizeof(command));
 
-	done = read(i2c_driver, temp_buf, sizeof(temp_buf));
-	result &= (done == sizeof(temp_buf));
+	done = read(i2c_driver, temp_acc, sizeof(temp_acc));
+	result &= (done == sizeof(temp_acc));
 
-	store_acc(temp_buf);
+	store_acc(temp_acc);
 
 	command = MPU6050_GYROX_MSB; //First data read + 6 to read all axes
 	done = write(i2c_driver, &command, sizeof(command));
 	result &= (done == sizeof(command));
 
-	done = read(i2c_driver, temp_buf, sizeof(temp_buf));
-	result &= (done == sizeof(temp_buf));
+	done = read(i2c_driver, temp_gyro, sizeof(temp_gyro));
+	result &= (done == sizeof(temp_gyro));
 
-	store_gyro(temp_buf);
+	store_gyro(temp_gyro);
 
 	return result;
 }
@@ -221,6 +238,8 @@ inline void I2CSensors::store_acc(uint8_t* buf_w_readings)
 
 	accelerometer_.Z.msb = buf_w_readings[4];
 	accelerometer_.Z.lsb = buf_w_readings[5];
+
+	accelerometer_.clocks = clock();
 }
 
 inline void I2CSensors::store_gyro(uint8_t* buf_w_readings)
@@ -235,6 +254,8 @@ inline void I2CSensors::store_gyro(uint8_t* buf_w_readings)
 
 	gyroscope_.Z.msb = buf_w_readings[4];
 	gyroscope_.Z.lsb = buf_w_readings[5];
+
+	gyroscope_.clocks = clock();
 }
 
 inline void I2CSensors::get_acc(void* acc_struct)
@@ -254,12 +275,11 @@ inline void I2CSensors::get_gyro(void* gyro_struct)
 
 inline bool I2CSensors::start_pressure_conversion()
 {
-	uint8_t command;
+	uint8_t command = MS561101BA_PRESSURE_CMD;
 	int done;
 
 	bool result = true;
 
-	command = MS561101BA_PRESSURE_CMD;
 	done = write(i2c_driver, &command, sizeof(command));
 	result &= (done == sizeof(command));
 
@@ -269,16 +289,17 @@ inline bool I2CSensors::start_pressure_conversion()
 inline bool I2CSensors::read_and_store_pressure()
 {
 	union udata32 read_data;
-	uint8_t temp_buf[3];
+	uint8_t temp_buf[] = {0,0,0};
 
-	uint8_t command;
+	uint8_t command = MS561101BA_ADC_READ_CMD;
 	int done;
 
 	bool result = true;
 
-	command = MS561101BA_ADC_READ_CMD;
 	done = write(i2c_driver, &command, sizeof(command));
 	result &= (done == sizeof(command));
+
+	usleep(100);
 
 	done = read(i2c_driver, temp_buf, sizeof(temp_buf));
 	result &= (done == sizeof(temp_buf));
@@ -309,12 +330,11 @@ inline uint32_t I2CSensors::get_pressure()
 
 inline bool I2CSensors::start_temperature_conversion()
 {
-	uint8_t command;
+	uint8_t command = MS561101BA_TEMPERATURE_CMD;
 	int done;
 
 	bool result = true;
 
-	command = MS561101BA_TEMPERATURE_CMD;
 	done = write(i2c_driver, &command, sizeof(command));
 	result &= (done == sizeof(command));
 
@@ -324,14 +344,13 @@ inline bool I2CSensors::start_temperature_conversion()
 inline bool I2CSensors::read_and_store_temperature()
 {
 	union udata32 read_data;
-	uint8_t temp_buf[3];
+	uint8_t temp_buf[] = {0,0,0};
 
-	uint8_t command;
+	uint8_t command = MS561101BA_ADC_READ_CMD;
 	int done;
 
 	bool result = true;
 
-	command = MS561101BA_ADC_READ_CMD;
 	done = write(i2c_driver, &command, sizeof(command));
 	result &= (done == sizeof(command));
 

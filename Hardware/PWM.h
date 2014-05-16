@@ -8,7 +8,8 @@
 #ifndef PWM_H_
 #define PWM_H_
 
-#define ESC_FREQUENCY	50 //Hz
+//#define ESC_FREQUENCY	50 //Hz
+#define ESC_FREQUENCY	480 //Hz
 //#define ENGINE_FREQUENCY	8000 //Hz
 #define ENGINE_PERIOD(freq)		1000000000/freq
 #define ENGINE_PERIOD_F		((float) ENGINE_PERIOD)
