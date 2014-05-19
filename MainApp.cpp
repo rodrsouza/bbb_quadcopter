@@ -12,8 +12,34 @@
 #include "Hardware/ESC.h"
 #include "Hardware/I2CSensors.h"
 #include "Hardware/Barometer.h"
+#include "IMU/Attitude.h"
 
-#define ALTITUDE_TEST
+#define PITCH_AND_ROLL_TEST
+
+#if defined(PITCH_AND_ROLL_TEST)
+int main()
+{
+	Attitude* attitude = new Attitude();
+	float pitch, roll;
+
+	sleep(2);
+
+	do
+	{
+		usleep(30000);
+		system("clear");
+		attitude->getEstimatedAttitude();
+		attitude->get_pitch_and_roll(pitch, roll);
+		printf("\npitch: %02.4f\nroll: %2.2f", pitch, roll);
+		//printf("\npitch: %d\nroll: %d", pitch, roll);
+	}while(true);
+
+
+	sleep(1);
+
+	return 0;
+}
+#endif
 
 #if defined(ALTITUDE_TEST)
 int main()

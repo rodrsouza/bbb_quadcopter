@@ -12,6 +12,7 @@
 #include "../General/Thread.h"
 
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 
@@ -65,16 +66,6 @@ union data16
 	};
 };
 
-union udata16
-{
-	uint16_t data;
-	struct
-	{
-		uint8_t lsb;
-		uint8_t msb;
-	};
-};
-
 union udata32
 {
 	uint32_t data;
@@ -103,16 +94,16 @@ struct ACC_RAW
 	union data16 Y;
 	union data16 Z;
 
-	clock_t clocks;
+	uint64_t time_in_micros;
 };
 
 struct GYRO_RAW
 {
-	union udata16 X;
-	union udata16 Y;
-	union udata16 Z;
+	union data16 X;
+	union data16 Y;
+	union data16 Z;
 
-	clock_t clocks;
+	uint64_t time_in_micros;
 };
 
 
@@ -142,6 +133,9 @@ private:
 	void clean_all();
 
 	void* Run();
+
+
+	uint64_t getTimeinMicros(void);
 
 
 	bool read_and_store_acc_gyro();
@@ -239,7 +233,7 @@ inline void I2CSensors::store_acc(uint8_t* buf_w_readings)
 	accelerometer_.Z.msb = buf_w_readings[4];
 	accelerometer_.Z.lsb = buf_w_readings[5];
 
-	accelerometer_.clocks = clock();
+	accelerometer_.time_in_micros = getTimeinMicros();
 }
 
 inline void I2CSensors::store_gyro(uint8_t* buf_w_readings)
@@ -255,7 +249,7 @@ inline void I2CSensors::store_gyro(uint8_t* buf_w_readings)
 	gyroscope_.Z.msb = buf_w_readings[4];
 	gyroscope_.Z.lsb = buf_w_readings[5];
 
-	gyroscope_.clocks = clock();
+	gyroscope_.time_in_micros = getTimeinMicros();
 }
 
 inline void I2CSensors::get_acc(void* acc_struct)
@@ -379,6 +373,14 @@ inline uint32_t I2CSensors::get_temperature()
 	Lock lock(temp_mutex);
 
 	return temperature;
+}
+
+inline uint64_t I2CSensors::getTimeinMicros(void)
+{
+	struct timeval time;
+	gettimeofday(&time, NULL);
+
+	return static_cast<uint64_t>( ( static_cast<uint64_t>(time.tv_sec * 1000000)) + time.tv_usec );
 }
 
 #endif /* I2CSENSORS_H_ */
