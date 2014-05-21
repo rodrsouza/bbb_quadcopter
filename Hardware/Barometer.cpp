@@ -15,11 +15,9 @@
 Barometer::Barometer() :
 	current_altitude(0.0)
 {
-	sensors = new I2CSensors();
+	sensors = I2CSensors::GetInstance();
 
 	sensors->get_prom_coef(&prom_coef_);
-
-	sensors->Start();
 }
 
 Barometer::~Barometer()

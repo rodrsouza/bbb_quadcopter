@@ -20,7 +20,7 @@ public:
 	virtual ~Thread();
 
 	int Start();
-	pthread_t* GetInstance ();
+//	pthread_t* GetInstance ();
 	pthread_t GetThreadID();
 
 	virtual void* Run() = 0;

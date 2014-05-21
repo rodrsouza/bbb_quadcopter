@@ -105,14 +105,18 @@ struct GYRO_RAW
 
 	uint64_t time_in_micros;
 };
-
-
 #pragma pack()
+
 
 class I2CSensors : public Thread
 {
+
+
 public:
 	I2CSensors();
+
+	static I2CSensors* GetInstance();
+
 	~I2CSensors();
 
 	bool open_and_configure();
@@ -128,6 +132,8 @@ public:
 	uint32_t get_temperature();
 
 private:
+	static I2CSensors* instance;
+
 	void close_file_descriptor();
 
 	void clean_all();
@@ -183,7 +189,6 @@ private:
 	Mutex press_mutex;
 	uint32_t pressure;
 };
-
 
 inline void I2CSensors::set_i2c_address(int address)
 {

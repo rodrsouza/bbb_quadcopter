@@ -53,15 +53,18 @@ static void* runThread(void* arg)
 
 int Thread::Start()
 {
-	int result = pthread_create(&m_tid, &m_attr, runThread, this);
-
-	if( result == 0 )
+	if(!m_running)
 	{
-		m_running = 1;
+		int result = pthread_create(&m_tid, &m_attr, runThread, this);
 
-		Lock myLock(m_shouldStopMutex, true);
-		m_shouldStop = 0;
-		myLock.Unlock();
+		if( result == 0 )
+		{
+			m_running = 1;
+
+			Lock myLock(m_shouldStopMutex, true);
+			m_shouldStop = 0;
+			myLock.Unlock();
+		}
 	}
 
 	return m_running;
@@ -82,7 +85,7 @@ int Thread::Should_Stop()
 }
 
 
-pthread_t * Thread::GetInstance ()
-{
-    return &m_tid;
-}
+//pthread_t * Thread::GetInstance ()
+//{
+//    return &m_tid;
+//}

@@ -9,13 +9,32 @@
 #include "../General/Lock.h"
 #include <unistd.h>
 
+I2CSensors* I2CSensors::instance = NULL;
+
 I2CSensors::I2CSensors() :
-	Thread(SENSORS_PRIORITY, SCHED_RR),
-	i2c_driver(0)
+		Thread(SENSORS_PRIORITY, SCHED_RR),
+		i2c_driver(0)
 {
+	if(!instance)
+	{
+		instance = this;
+	}
+
 	clean_all();
 
 	open_and_configure();
+
+	Start();
+}
+
+I2CSensors* I2CSensors::GetInstance()
+{
+	if(!instance)
+	{
+		instance = new I2CSensors();
+	}
+
+	return instance;
 }
 
 I2CSensors::~I2CSensors()
@@ -95,7 +114,7 @@ bool I2CSensors::configure_mpu6050()
 	espected_number = 4;
 	buffer[0] = 0x1A;
 	buffer[1] = 0x00;
-	buffer[2] = 0x18; // Gyro = 2000 degrees/s
+	buffer[2] = 0x18; // Gyro = +-2000 degrees/s
 	buffer[3] = 0x10; // Accel = +-8g
 	do_number = write(i2c_driver, buffer, espected_number);
 	usleep(1000);
@@ -174,14 +193,6 @@ void I2CSensors::close_file_descriptor()
 void I2CSensors::get_prom_coef(PROM_COEF* p_struct)
 {
 	memmove(p_struct, &MS561101_prom[1], (sizeof(MS561101_prom)-(2*sizeof(uint16_t))) );
-
-//	printf("Prom coef\n");
-//	printf("C1: %d\n", p_struct->C1);
-//	printf("C2: %d\n", p_struct->C2);
-//	printf("C3: %d\n", p_struct->C3);
-//	printf("C4: %d\n", p_struct->C4);
-//	printf("C5: %d\n", p_struct->C5);
-//	printf("C6: %d\n", p_struct->C6);
 }
 
 void* I2CSensors::Run()
