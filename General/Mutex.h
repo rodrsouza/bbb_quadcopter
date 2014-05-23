@@ -10,7 +10,6 @@
 
 #include <pthread.h> /* for mutex*/
 
-#include "Lock.h"
 
 /**
  *    This class implements a Mutex with the pthread_mutex object and functions.
@@ -27,7 +26,6 @@ public:
 	 */
 	~Mutex();
 
-private:
 	pthread_mutex_t m_mutex;
 
 	/**
@@ -49,7 +47,6 @@ private:
 	 */
 	int Unlock();
 
-	friend class Lock;
 };
 
 inline int Mutex::Lock()

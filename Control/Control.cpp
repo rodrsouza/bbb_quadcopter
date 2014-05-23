@@ -8,15 +8,43 @@
 #include "Control.h"
 #include "../IMU/Attitude.h"
 #include "../Hardware/Barometer.h"
-#include "PID.h"
+#include "../Hardware/ESC.h"
+
 
 Control* Control::instance = NULL;
 
 Control::Control() :
-	Thread(CONTROL_PRIORITY, SCHED_RR)
+	Thread(CONTROL_PRIORITY, SCHED_RR),
+	pitch_pid(NULL),
+	roll_pid(NULL),
+	altitude_pid(NULL),
+	pitch_setpoint(0.0F),
+	roll_setpoint(0.0F),
+	altitude_setpoint(0.0F)
 {
 	attitude = new Attitude();
 	barometer = new Barometer();
+
+	esc = new ESC();
+
+	float interval = get_pitch_roll_interval();
+
+	pitch_pid = new PID(P_PITCH, I_PITCH, D_PITCH, interval);
+	roll_pid = new PID(P_ROLL, I_ROLL, D_ROLL, interval);
+	altitude_pid = new PID(P_ALTITUDE, I_ALTITUDE, D_ALTITUDE, );
+
+	pitch_pid->setInputLimits();
+	roll_pid->setInputLimits();
+	altitude_pid->setInputLimits(-1.0F, MAX_ALTITUDE);
+
+	pitch_pid->setMode(AUTO_MODE);
+	roll_pid->setMode(AUTO_MODE);
+	altitude_pid->setMode(AUTO_MODE);
+
+	pitch_pid->setOutputLimits(PITCH_MIN_OUT, PITCH_MAX_OUT);
+	roll_pid->setOutputLimits(ROLL_MIN_OUT, ROLL_MAX_OUT);
+	altitude_pid->setOutputLimits(ALTITUDE_MIN_OUT, ALTITUDE_MAX_OUT);
+
 }
 
 Control* Control::GetInstance()
@@ -40,14 +68,61 @@ Control::~Control()
 	{
 		delete barometer;
 	}
+
+	if(esc != NULL)
+	{
+		delete esc;
+	}
+
+	if(pitch_pid != NULL)
+	{
+		delete pitch_pid;
+	}
+
+	if(roll_pid != NULL)
+	{
+		delete roll_pid;
+	}
+
+	if(altitude_pid != NULL)
+	{
+		delete altitude_pid;
+	}
 }
 
 
 void* Control::Run()
 {
+	float pitch = 0.0F;
+	float roll = 0.0F;
+
+	float pitch_pwm = 0.0F;
+	float roll_pwm = 0.0F;
+	float altitude_pwm = 0.0F;
+
 	while(!Should_Stop())
 	{
+		if(is_flying_)
+		{
+			refresh_set_point();
+			attitude->getEstimatedAttitude();
+			attitude->get_pitch_and_roll(pitch, roll);
 
+			pitch_pid->setProcessValue(pitch);
+			roll_pid->setProcessValue(roll);
+
+			pitch_pwm = pitch_pid->compute();
+			roll_pwm = roll_pid->compute();
+
+		}
+		else if(is_landing_)
+		{
+
+		}
+		else
+		{
+			//idle state;
+		}
 	}
 }
 

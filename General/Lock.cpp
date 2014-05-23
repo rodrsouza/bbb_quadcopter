@@ -12,30 +12,8 @@
 #include <stdlib.h>		/* for CHECK , strtoul */
 
 
-Lock::Lock(Mutex& aMutex, bool aWaitUntilBeLocked) :
-	m_mutex(&aMutex),
-	m_locked(false)
-{
-	int success = 0;
-	if(aWaitUntilBeLocked)
-	{
-		success = m_mutex->Lock();
-		m_locked = (success == 0);
-	}
-	else
-	{
-		success = m_mutex->TryToLock();
-		m_locked = (success == 0);
-	}
-}
 
-Lock::~Lock()
-{
-	if(m_locked)
-	{
-		m_mutex->Unlock();
-	}
-}
+
 
 const bool Lock::LockAgain(bool aWaitUntilBeLocked)
 {
