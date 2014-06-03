@@ -12,16 +12,27 @@
 
 #define GYRO_DEGREES_PER_SECOND		16.4F
 
+struct ATTIUDE_CAL
+{
+	float pitch;
+	float roll;
+};
+
 class Attitude {
 public:
 	Attitude();
 	~Attitude();
 
 	void get_pitch_and_roll(float& pitch, float& roll);
+	void get_pitch_and_roll_no_cal(float& pitch, float& roll);
 
 	void getEstimatedAttitude();
 
 	float get_interval_seconds();
+
+	bool save_cal(float pitch, float roll);
+
+	void restore_calibration();
 
 private:
 	void get_acc_and_gyro_values();
@@ -38,6 +49,9 @@ private:
 
 	float pitch_;
 	float roll_;
+
+	float pitch_cal_;
+	float roll_cal_;
 };
 
 #endif /* ATTITUDE_H_ */

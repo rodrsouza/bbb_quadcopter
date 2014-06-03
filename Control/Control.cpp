@@ -31,7 +31,7 @@ Control::Control() :
 
 	pitch_pid = new PID(P_PITCH, I_PITCH, D_PITCH, interval);
 	roll_pid = new PID(P_ROLL, I_ROLL, D_ROLL, interval);
-	altitude_pid = new PID(P_ALTITUDE, I_ALTITUDE, D_ALTITUDE, );
+	//altitude_pid = new PID(P_ALTITUDE, I_ALTITUDE, D_ALTITUDE, );
 
 	pitch_pid->setInputLimits(MIN_DEGREE_LIMIT, MAX_DEGREE_LIMIT);
 	roll_pid->setInputLimits(MIN_DEGREE_LIMIT, MAX_DEGREE_LIMIT);
@@ -135,8 +135,8 @@ void* Control::Run()
 
 			if(!counter)
 			{
-				altitude_pwm = compute_offset_for_landing(altitude_pwm);
-				counter = LANDING_REFRESH_RATE;
+				//altitude_pwm = compute_offset_for_landing(altitude_pwm);
+				//counter = LANDING_REFRESH_RATE;
 			}
 			else
 			{

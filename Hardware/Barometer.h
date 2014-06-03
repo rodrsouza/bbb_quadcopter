@@ -43,6 +43,8 @@ private:
 	PROM_COEF prom_coef_;
 	I2CSensors* sensors;
 
+	float temperature_cal;
+
 	Mutex current_bar_mutex;
 	BAROMETER_DATA current_bar_data;
 

@@ -13,7 +13,8 @@
 #define BARO_TAB_SIZE   21
 
 Barometer::Barometer() :
-	current_altitude(0.0)
+	current_altitude(0.0),
+	temperature_cal(0.0F)
 {
 	sensors = I2CSensors::GetInstance();
 
@@ -78,7 +79,7 @@ float Barometer::get_altitude_ts()
 
 	// on faster CPUs use a more exact calculation
 	float scaling = current_bar_data.pressure / zero_altitude_data.pressure;
-	float temp    = zero_altitude_data.temperature + 273.15F;
+	float temp    = current_bar_data.temperature + 273.15F;
 
 	// This is an exact calculation that is within +-2.5m of the standard atmosphere tables
 	// in the troposphere (up to 11,000 m amsl).
@@ -96,25 +97,25 @@ void Barometer::zero_altitude_ts()
 	int i;
 	Lock lock(zero_alt_mutex);
 
-	for(i=0, sum_press=sum_temp=0.0; i<10; ++i)
+	for(i=0, sum_press=sum_temp=0.0; i<500; ++i)
 	{
 		compute_temp_press(&zero_altitude_data);
 
 		sum_press += zero_altitude_data.pressure;
 		sum_temp += zero_altitude_data.temperature;
 
-		usleep(30000);
+		usleep(20000);
 	}
 
-	zero_altitude_data.pressure = sum_press/10.0;
-	zero_altitude_data.temperature = sum_temp/10.0;
+	zero_altitude_data.pressure = sum_press/500.0F;
+	zero_altitude_data.temperature = temperature_cal = sum_temp/500.0F;
 }
 
 float Barometer::get_filtered_altitude_ts()
 {
 	Lock lock(current_alt_mutex);
 
-	current_altitude =  dead_band((((current_altitude * 6.0F) + (get_altitude_ts() * 2.0F))  / 8.0F));
+	current_altitude =  (current_altitude * 0.707F) + (get_altitude_ts() * 0.293F) ;
 
 	return current_altitude;
 }
@@ -130,16 +131,16 @@ float Barometer::dead_band(float value)
 {
 	if(fabs(value) < 0.1F)
 	{
-	value = 0;
+		value = 0;
 	}
-	else if(value > 0)
-	{
-	  value -= 0.1F;
-	}
-	else if(value < 0)
-	{
-	  value += 0.1F;
-	}
+//	else if(value > 0)
+//	{
+//	  value -= 0.1F;
+//	}
+//	else if(value < 0)
+//	{
+//	  value += 0.1F;
+//	}
 
 	return value;
 }

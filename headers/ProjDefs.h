@@ -26,6 +26,7 @@ typedef struct
 } SOCKET_MESSAGE;
 
 
+#define CAL_FILE_PATH	"/home/root/tcc/app/cfg/attitude_cal"
 
 
 #endif /* _PROJDEFS_H_ */

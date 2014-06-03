@@ -13,8 +13,74 @@
 #include "Hardware/I2CSensors.h"
 #include "Hardware/Barometer.h"
 #include "IMU/Attitude.h"
+#include "General/kbhit.h"
 
-#define PITCH_AND_ROLL_TEST
+#define ALTITUDE_TEST
+
+#if defined(ATTITUDE_CALIBRATION)
+int main()
+{
+	Attitude* attitude = new Attitude();
+	float pitch, roll;
+	float pitch_raw_sum, roll_raw_sum;
+	float pitch_sum, roll_sum;
+	int i;
+
+	nonblock(NB_ENABLE);
+
+	do
+	{
+		usleep(1000);
+		system("clear");
+
+		attitude->getEstimatedAttitude();
+		attitude->get_pitch_and_roll_no_cal(pitch, roll);
+
+		printf("\npitch: %2.4f\nroll: %2.4f", pitch, roll);
+	}while(!kbhit());
+
+	printf("\n\nEfetuando aquisicao de dados brutos...\n");
+
+	pitch_raw_sum = 0;
+	roll_raw_sum = 0;
+
+	for(i = 0; i < 2000;  ++i)
+	{
+		usleep(200);
+
+		attitude->getEstimatedAttitude();
+		attitude->get_pitch_and_roll_no_cal(pitch, roll);
+
+		pitch_raw_sum += pitch;
+		roll_raw_sum += roll;
+	}
+
+	printf("Calculando media sem calibracao...\n");
+
+	pitch_raw_sum /= 2000.0F;
+	roll_raw_sum /= 2000.0F;
+	printf("Pitch: %f\nRoll: %f\n", static_cast<float>(pitch_raw_sum), static_cast<float>(roll_raw_sum));
+
+	printf("Salvando calibracao...\n");
+	if( attitude->save_cal(static_cast<float>(pitch_raw_sum), static_cast<float>(roll_raw_sum)) )
+	{
+		printf("Calibracao salva com sucesso...\n");
+	}
+	else
+	{
+		printf("Falha ao salvar calibracao...\n");
+	}
+
+	sleep(1);
+
+	delete attitude;
+
+	return 0;
+}
+#endif
+
+
+
 
 #if defined(PITCH_AND_ROLL_TEST)
 int main()
@@ -26,7 +92,7 @@ int main()
 
 	do
 	{
-		usleep(30000);
+		usleep(5000);
 		system("clear");
 		attitude->getEstimatedAttitude();
 		attitude->get_pitch_and_roll(pitch, roll);
@@ -41,6 +107,8 @@ int main()
 }
 #endif
 
+
+
 #if defined(ALTITUDE_TEST)
 int main()
 {
@@ -52,9 +120,9 @@ int main()
 
 	do
 	{
-		usleep(30000);
+		usleep(20000);
 		system("clear");
-		printf("\nAltitude: %02.4f m\nTemperature: %2.2f C", barometer->get_filtered_altitude_ts(), barometer->get_temperature_ts());
+		printf("\nAltitude: %02.1f m\nTemperature: %2.2f C\nPressure: %2.2F\n", barometer->get_filtered_altitude_ts(), barometer->get_temperature_ts(), barometer->get_pressure_ts());
 	}while(true);
 
 	delete barometer;
@@ -64,6 +132,7 @@ int main()
 	return 0;
 }
 #endif
+
 
 
 #if defined(SENSORS_RAW_TEST)
