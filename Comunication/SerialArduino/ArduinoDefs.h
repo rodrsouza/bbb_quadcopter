@@ -24,24 +24,25 @@
 #define VOLTAGE_CELL2_COMMAND			   0x11
 #define VOLTAGE_CELL3_COMMAND			   0x12
 
-#define ECHO_FRONT_PIN                     42
-#define ECHO_REAR_PIN                      44
-#define ECHO_LEFT_PIN                      46
-#define ECHO_RIGHT_PIN                     48
-#define ECHO_TOP_PIN                       50
-#define ECHO_BOTTOM_PIN                    52
+#define ECHO_FRONT_PIN                     24
+#define ECHO_REAR_PIN                      28
+#define ECHO_LEFT_PIN                      32
+#define ECHO_RIGHT_PIN                     36
+#define ECHO_TOP_PIN                       40
+#define ECHO_BOTTOM_PIN                    44
 
-#define TRIGGER_FRONT_PIN                  43
-#define TRIGGER_REAR_PIN                   45
-#define TRIGGER_LEFT_PIN                   47
-#define TRIGGER_RIGHT_PIN                  49
-#define TRIGGER_TOP_PIN                    51
-#define TRIGGER_BOTTOM_PIN                 53
+#define TRIGGER_FRONT_PIN                  22
+#define TRIGGER_REAR_PIN                   26
+#define TRIGGER_LEFT_PIN                   30
+#define TRIGGER_RIGHT_PIN                  34
+#define TRIGGER_TOP_PIN                    38
+#define TRIGGER_BOTTOM_PIN                 42
 
-#define VOLTAGE_CELL_1_PIN				   A0
-#define VOLTAGE_CELL_2_PIN				   A1
-#define VOLTAGE_CELL_3_PIN				   A2
-#define CURRENT_BATTERY_PIN				   A3	
+#define VOLTAGE_CELL_1_PIN				   A9
+#define VOLTAGE_CELL_2_PIN				   A10
+#define VOLTAGE_CELL_3_PIN				   A11
+#define CURRENT_BATTERY_PIN				   A8
+	
 
 
 #define MAX_SENSOR_NUMBER 		   		   6

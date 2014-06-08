@@ -11,9 +11,23 @@
 
 #include <math.h>
 
+ESC* ESC::instance = NULL;
+
 ESC::ESC() :
 	pwm_(NULL)
 {
+	pwm_ = new PWM(ESC_FREQUENCY);
+}
+
+
+ESC* ESC::GetInstance()
+{
+	if(!instance)
+	{
+		instance = new ESC();
+	}
+
+	return instance;
 }
 
 ESC::~ESC()
@@ -22,8 +36,6 @@ ESC::~ESC()
 
 void ESC::InitializePWM()
 {
-	pwm_ = new PWM(ESC_FREQUENCY);
-
 	pwm_->Initialize();
 }
 
@@ -40,6 +52,24 @@ void ESC::Idle()
 	back(0.0F);
 	left(0.0F);
 	right(0.0F);
+}
+
+void ESC::turn_on_engines()
+{
+	pwm_->front(11.0F);
+	pwm_->back(11.0F);
+	pwm_->left(11.0F);
+	pwm_->right(11.0F);
+}
+
+void ESC::OpenFiles()
+{
+	pwm_->OpenFiles();
+}
+
+void ESC::CloseFiles()
+{
+	pwm_->CloseFiles();
 }
 
 void ESC::front(float duty_cycle)

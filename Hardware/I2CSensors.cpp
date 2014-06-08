@@ -15,11 +15,6 @@ I2CSensors::I2CSensors() :
 		Thread(SENSORS_PRIORITY, SCHED_RR),
 		i2c_driver(0)
 {
-	if(!instance)
-	{
-		instance = this;
-	}
-
 	clean_all();
 
 	open_and_configure();
@@ -200,7 +195,7 @@ void* I2CSensors::Run()
 	int i;
 	bool temp_press = true;
 
-	while(!Should_Stop())
+	while(true)
 	{
 		(void)set_i2c_address(MS561101BA_ADDESS);
 
@@ -221,14 +216,14 @@ void* I2CSensors::Run()
 
 		(void)set_i2c_address(MPU6050_ADDRESS);
 
-		for(i=0; i<12; ++i)
+		for(i=0; i<10; ++i)
 		{
 			if(!read_and_store_acc_gyro())
 			{
 				printf("I2CSensors: read and store acc/gyro error.\n");
 			}
 
-			usleep(100);
+			usleep(150);
 		}
 
 		(void)set_i2c_address(MS561101BA_ADDESS);
@@ -259,7 +254,7 @@ void* I2CSensors::Run()
 				printf("I2CSensors: read and store acc/gyro error.\n");
 			}
 
-			usleep(100);
+			usleep(150);
 		}
 	}
 }

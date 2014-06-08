@@ -132,8 +132,8 @@ void PID::setTunings(float Kc, float tauI, float tauD) {
     }
 
     //Store raw values to hand back to user on request.
-    pParam_ = Kc;
-    iParam_ = tauI;
+    KP_ = Kc;
+    KI_ = tauI;
     dParam_ = tauD;
 
     float tempTauR;
@@ -240,31 +240,40 @@ float PID::compute() {
 
     float error = scaledSP - scaledPV;
 
+    /*
     //Check and see if the output is pegged at a limit and only
     //integrate if it is not. This is to prevent reset-windup.
     if (!(prevControllerOutput_ >= 1 && error > 0) && !(prevControllerOutput_ <= 0 && error < 0)) {
         accError_ += error;
     }
 
+
     //Compute the current slope of the input signal.
     float dMeas = (scaledPV - prevProcessVariable_) / tSample_;
+    */
 
+    accError_ = ((error * tSample_) - ((-1.0F)*accError_));
+/*
     float scaledBias = 0.0;
-
     if (usingFeedForward) {
         scaledBias = (bias_ - outMin_) / outSpan_;
     }
-
+*/
     //Perform the PID calculation.
-    controllerOutput_ = scaledBias + Kc_ * (error + (tauR_ * accError_) - (tauD_ * dMeas));
-//controllerOutput_=scaledBias + Kc*(error + (tauR_*accError) + (tauD_*dMeas));
+    //original controllerOutput_ = scaledBias + Kc_ * (error + (tauR_ * accError_) - (tauD_ * dMeas));
+    //controllerOutput_ = scaledBias + Kc_ * (error + (tauR_ * accError_) - (tauD_ * dMeas));
+    controllerOutput_ = (KP_ * error) + (KI_ * accError_);
 
+    //controllerOutput_=scaledBias + Kc*(error + (tauR_*accError) + (tauD_*dMeas));
+
+    /*
     //Make sure the computed output is within output constraints.
     if (controllerOutput_ < 0.0) {
         controllerOutput_ = 0.0;
     } else if (controllerOutput_ > 1.0) {
         controllerOutput_ = 1.0;
     }
+    */
 
     //Remember this output for the windup check next time.
     prevControllerOutput_ = controllerOutput_;
@@ -272,7 +281,22 @@ float PID::compute() {
     prevProcessVariable_  = scaledPV;
 
     //Scale the output from percent span back out to a real world number.
-    return ((controllerOutput_ * outSpan_) + outMin_);
+    //original return ((controllerOutput_ * outSpan_) + outMin_);
+
+    float saida = controllerOutput_ * (outSpan_*0,5) ;
+
+    //saida *= (-1.0F);
+
+    if(saida < outMin_)
+    {
+    	saida = outMin_;
+    }
+    else if (saida > outMax_)
+    {
+    	saida = outMax_;
+    }
+
+    return saida;
 
 }
 
@@ -308,13 +332,13 @@ float PID::getInterval() {
 
 float PID::getPParam() {
 
-    return pParam_;
+    return KP_;
 
 }
 
 float PID::getIParam() {
 
-    return iParam_;
+    return KI_;
 
 }
 

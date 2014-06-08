@@ -12,10 +12,90 @@
 #include "Hardware/ESC.h"
 #include "Hardware/I2CSensors.h"
 #include "Hardware/Barometer.h"
+#include "Control/Control.h"
 #include "IMU/Attitude.h"
 #include "General/kbhit.h"
 
-#define ALTITUDE_TEST
+#define COMPENSATION_TEST
+
+#if defined(COMPENSATION_TEST)
+int main(int argc, char *argv[])
+{
+	nonblock(NB_ENABLE);
+
+	if(argc < 2)
+	{
+		ESC::GetInstance()->InitializePWM();
+		ESC::GetInstance()->OpenFiles();
+		ESC::GetInstance()->InitializeESC();
+
+		printf("\nInicializando...\n\n");
+	}
+	else if(argc == 2)
+	{
+		Control* control = Control::GetInstance();
+
+		control->setPitchValue(0);
+		control->setRollValue(0);
+
+		control->set_flying();
+	}
+
+	//CU NA MAO
+	while(!kbhit())
+	{
+	}
+
+	if(argc == 2)
+	{
+		Control::GetInstance()->Stop();
+
+		usleep(1000);
+	}
+
+	ESC::GetInstance()->Idle();
+	ESC::GetInstance()->Idle();
+	ESC::GetInstance()->Idle();
+}
+#endif
+#if defined(SUPORT_TEST)
+int main(int argc, char *argv[])
+{
+	ESC* esc = ESC::GetInstance();
+	float pwm;
+
+	nonblock(NB_ENABLE);
+
+
+	if(argc < 2)
+	{
+		esc->InitializePWM();
+		esc->InitializeESC();
+
+		printf("\nInicializando...\n\n");
+	}
+	else if(argc == 2)
+	{
+		pwm = (float) atoi(argv[1]);
+
+		printf("\nValor: %2.0f\n\n", pwm);
+
+		esc->front(pwm);
+		esc->back(pwm);
+		esc->left(pwm);
+		esc->right(pwm);
+	}
+
+	while(!kbhit())
+	{
+	}
+
+	esc->Idle();
+
+	delete esc;
+}
+#endif
+
 
 #if defined(ATTITUDE_CALIBRATION)
 int main()
@@ -24,14 +104,13 @@ int main()
 	float pitch, roll;
 	float pitch_raw_sum, roll_raw_sum;
 	float pitch_sum, roll_sum;
-	int i;
+	int i, counter, amostras;
 
 	nonblock(NB_ENABLE);
 
 	do
 	{
 		usleep(1000);
-		system("clear");
 
 		attitude->getEstimatedAttitude();
 		attitude->get_pitch_and_roll_no_cal(pitch, roll);
@@ -39,26 +118,38 @@ int main()
 		printf("\npitch: %2.4f\nroll: %2.4f", pitch, roll);
 	}while(!kbhit());
 
+	system("clear");
+
 	printf("\n\nEfetuando aquisicao de dados brutos...\n");
 
 	pitch_raw_sum = 0;
 	roll_raw_sum = 0;
 
-	for(i = 0; i < 2000;  ++i)
+	for(i = amostras = 0, counter = 100; i < 150000;  ++i)
 	{
-		usleep(200);
+		usleep(1000);
 
 		attitude->getEstimatedAttitude();
 		attitude->get_pitch_and_roll_no_cal(pitch, roll);
 
-		pitch_raw_sum += pitch;
-		roll_raw_sum += roll;
+		if(counter)
+		{
+			pitch_raw_sum += pitch;
+			roll_raw_sum += roll;
+			counter = 100;
+			amostras++;
+			printf("\npitch: %2.4f\nroll: %2.4f", pitch, roll);
+		}
+		else
+		{
+			--counter;
+		}
 	}
 
 	printf("Calculando media sem calibracao...\n");
 
-	pitch_raw_sum /= 2000.0F;
-	roll_raw_sum /= 2000.0F;
+	pitch_raw_sum /= static_cast<float>(amostras);
+	roll_raw_sum /= static_cast<float>(amostras);
 	printf("Pitch: %f\nRoll: %f\n", static_cast<float>(pitch_raw_sum), static_cast<float>(roll_raw_sum));
 
 	printf("Salvando calibracao...\n");

@@ -20,14 +20,23 @@ Control::Control() :
 	altitude_pid(NULL),
 	pitch_setpoint(0.0F),
 	roll_setpoint(0.0F),
-	altitude_setpoint(0.0F)
+	altitude_setpoint(0.0F),
+	is_landing_(false),
+	is_flying_(false),
+	landed_(false)
 {
 	attitude = new Attitude();
 	barometer = new Barometer();
 
-	esc = new ESC();
+	esc = ESC::GetInstance();
+
+	esc->OpenFiles();
+
+	esc->Idle();
 
 	float interval = get_pitch_roll_interval();
+
+	printf("Interval: %f\n", interval);
 
 	pitch_pid = new PID(P_PITCH, I_PITCH, D_PITCH, interval);
 	roll_pid = new PID(P_ROLL, I_ROLL, D_ROLL, interval);
@@ -35,17 +44,21 @@ Control::Control() :
 
 	pitch_pid->setInputLimits(MIN_DEGREE_LIMIT, MAX_DEGREE_LIMIT);
 	roll_pid->setInputLimits(MIN_DEGREE_LIMIT, MAX_DEGREE_LIMIT);
-	altitude_pid->setInputLimits(MIN_ALTITUDE, MAX_ALTITUDE);
+	//altitude_pid->setInputLimits(MIN_ALTITUDE, MAX_ALTITUDE);
 
 	pitch_pid->setMode(AUTO_MODE);
 	roll_pid->setMode(AUTO_MODE);
-	altitude_pid->setMode(AUTO_MODE);
+	//altitude_pid->setMode(AUTO_MODE);
 
 	pitch_pid->setOutputLimits(PITCH_MIN_OUT, PITCH_MAX_OUT);
 	roll_pid->setOutputLimits(ROLL_MIN_OUT, ROLL_MAX_OUT);
-	altitude_pid->setOutputLimits(ALTITUDE_MIN_OUT, ALTITUDE_MAX_OUT);
+	//altitude_pid->setOutputLimits(ALTITUDE_MIN_OUT, ALTITUDE_MAX_OUT);
 
-	polling_interval = static_cast<int>(ceilf(interval/1000000.0F));
+	polling_interval = static_cast<int>(ceilf(interval*100000));
+	polling_interval *= 10;
+
+	Start();
+
 }
 
 Control* Control::GetInstance()
@@ -99,7 +112,7 @@ void* Control::Run()
 
 	float pitch_pwm = 0.0F;
 	float roll_pwm = 0.0F;
-	float altitude_pwm = 0.0F;
+	float altitude_pwm = 30.0F;
 
 	int counter = 0;
 
@@ -117,7 +130,10 @@ void* Control::Run()
 			pitch_pwm = pitch_pid->compute();
 			roll_pwm = roll_pid->compute();
 
-			altitude_pwm = altitude_pid->compute();
+			//printf("pitch: %2.2f pitch_pwm: %2.2f\n", pitch, pitch_pwm);
+			printf("roll: %2.2f roll_pwm: %2.2f\n", roll, roll_pwm);
+
+			//altitude_pwm = altitude_pid->compute();
 
 			refresh_pwm(pitch_pwm, roll_pwm, altitude_pwm);
 		}
@@ -135,8 +151,14 @@ void* Control::Run()
 
 			if(!counter)
 			{
-				//altitude_pwm = compute_offset_for_landing(altitude_pwm);
-				//counter = LANDING_REFRESH_RATE;
+				altitude_pwm -= LANDING_RATE;
+
+				if(altitude_pwm < 0.0F)
+				{
+					altitude_pwm = 0.0F;
+					is_landing_ = false;
+					landed_ = true;
+				}
 			}
 			else
 			{
@@ -147,7 +169,12 @@ void* Control::Run()
 		}
 		else if(landed_)
 		{
-			//desliga motor
+			esc->Idle();
+			counter = LANDING_REFRESH_RATE;
+
+			landed_= false;
+			is_flying_ = false;
+			is_landing_ = false;
 			//desliga luz de pouso
 			//manda para idle
 		}
@@ -158,7 +185,10 @@ void* Control::Run()
 
 		usleep(polling_interval);
 	}
+
+	ESC::GetInstance()->Idle();
 }
+
 
 float Control::get_pitch_roll_interval()
 {
@@ -193,13 +223,13 @@ inline void Control::refresh_pwm(float pitch_pwm, float roll_pwm, float offset_p
 	}
 	else
 	{
-		half_pitch = pitch_pwm/2.0F;
+		half_pitch = fabs(pitch_pwm)/2.0F;
 
 		front = offset_pwm + half_pitch;
 		back = offset_pwm - half_pitch;
 	}
 
-	if(roll_pwm < 0.0F)
+	if(roll_pwm > 0.0F)
 	{
 		half_roll = fabs(roll_pwm)/2.0F;
 
@@ -208,14 +238,67 @@ inline void Control::refresh_pwm(float pitch_pwm, float roll_pwm, float offset_p
 	}
 	else
 	{
-		half_roll = roll_pwm/2.0F;
+		half_roll = fabs(roll_pwm)/2.0F;
 
 		left = offset_pwm + half_roll;
 		right = offset_pwm - half_roll;
 	}
 
+	//system("clear");
+	//printf("F: %2.2F\nT: %2.2F\nE: %2.2F\nD: %2.2F\n", front, back, left, right);
+
 	esc->front(front);
 	esc->back(back);
 	esc->left(left);
 	esc->right(right);
+}
+
+void Control::set_landing()
+{
+	is_flying_ = false;
+	is_landing_ = true;
+	landed_ = false;
+}
+
+void Control::turn_on_engines()
+{
+	esc->turn_on_engines();
+}
+
+void Control::set_flying()
+{
+	is_flying_ = true;
+	is_landing_ = false;
+	landed_ = false;
+}
+
+bool Control::is_flying()
+{
+	return is_flying_;
+}
+
+bool Control::is_idle()
+{
+	return !(is_flying_ || is_landing_ || landed_);
+}
+
+void Control::setPitchValue(float value)
+{
+	Lock lock(positions_mutex);
+
+	pitch_setpoint = value;
+}
+
+void Control::setRollValue(float value)
+{
+	Lock lock(positions_mutex);
+
+	roll_setpoint = value;
+}
+
+void Control::setAltitude(float value)
+{
+	Lock lock(positions_mutex);
+
+	altitude_setpoint = value;
 }

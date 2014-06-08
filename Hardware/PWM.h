@@ -18,6 +18,7 @@
 #define MINIMUM_PERIOD_F	1000000.0F //1 ms
 
 #include "ProjDefs.h"
+#include <cstdio>
 
 class PWM {
 public:
@@ -36,6 +37,10 @@ public:
 	 */
 	void Initialize();
 
+	void OpenFiles();
+
+	void CloseFiles();
+
 	void front(uint32_t duty_period);
 	void left(uint32_t duty_period);
 	void right(uint32_t duty_period);
@@ -43,6 +48,11 @@ public:
 
 private:
 	int frequency_;
+
+	FILE* front_pwm;
+	FILE* back_pwm;
+	FILE* left_pwm;
+	FILE* right_pwm;
 };
 
 #endif /* PWM_H_ */

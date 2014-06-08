@@ -175,8 +175,8 @@ private:
     float tauD_;
 
     //Raw tuning parameters.
-    float pParam_;
-    float iParam_;
+    float KP_;
+    float KI_;
     float dParam_;
 
     //The point we want to reach.

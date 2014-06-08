@@ -41,14 +41,18 @@
 	#define ROLL_MIN_OUT	-MAX_PWM
 #endif
 
-
+/*
 #define P_PITCH			2.357142857F
 #define I_PITCH			2.5F
 #define D_PITCH			2.875F
+*/
+#define P_PITCH			7.0F
+#define I_PITCH			4.0F
+#define D_PITCH			0.0F
 
-#define P_ROLL			P_PITCH
-#define I_ROLL			I_PITCH
-#define D_ROLL			D_PITCH
+#define P_ROLL			5.0F
+#define I_ROLL			4.0F
+#define D_ROLL			0.0F
 
 #define P_ALTITUDE		4.571428571F
 #define I_ALTITUDE		2.083333333F
@@ -62,8 +66,8 @@
 
 #define MAX_PWM			30.0F
 
-#define LANDING_RATE
-#define LANDING_REFRESH_RATE
+#define LANDING_RATE			2.0F
+#define LANDING_REFRESH_RATE	10
 
 //Forward declaration
 class Attitude;
@@ -83,10 +87,8 @@ public:
 	void turn_on_engines();
 	void set_flying();
 
-	void is_flying();
-	void is_idle();
-
-	void propelers();
+	bool is_flying();
+	bool is_idle();
 
 	~Control();
 
@@ -101,7 +103,7 @@ private:
 
 	void refresh_set_point();
 
-	float compute_offset_for_landing(float B);
+	float compute_offset_for_landing(float current_pwm);
 
 	void refresh_pwm(float pitch_pwm, float roll_pwm, float offset_pwm);
 
@@ -134,7 +136,7 @@ inline void Control::refresh_set_point()
 
 	pitch_pid->setSetPoint(pitch_setpoint);
 	roll_pid->setSetPoint(roll_setpoint);
-	altitude_pid->setSetPoint(altitude_setpoint);
+	//altitude_pid->setSetPoint(altitude_setpoint);
 }
 
 #endif /* CONTROL_H_ */

@@ -17,14 +17,22 @@ class PWM;
 class ESC
 {
 public:
-	ESC();
+
 	~ESC();
+
+	static ESC* GetInstance();
 
 	void InitializePWM();
 
 	void InitializeESC();
 
+	void OpenFiles();
+
+	void CloseFiles();
+
 	void Idle();
+
+	void turn_on_engines();
 
 	void front(float duty_cycle);
 	void back(float duty_cycle);
@@ -32,6 +40,10 @@ public:
 	void right(float duty_cycle);
 
 private:
+	ESC();
+
+	static ESC* instance;
+
 	PWM* pwm_;
 };
 
