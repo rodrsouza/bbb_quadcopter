@@ -73,6 +73,8 @@ PID::PID(float Kc, float tauI, float tauD, float interval) {
     accError_ = 0.0;
     bias_     = 0.0;
 
+    antError = 0.0F;
+
     realOutput_ = 0.0;
 
 }
@@ -134,8 +136,8 @@ void PID::setTunings(float Kc, float tauI, float tauD) {
     //Store raw values to hand back to user on request.
     KP_ = Kc;
     KI_ = tauI;
-    dParam_ = tauD;
-
+    KD_ = tauD;
+/*
     float tempTauR;
 
     if (tauI == 0.0) {
@@ -156,7 +158,7 @@ void PID::setTunings(float Kc, float tauI, float tauD) {
     Kc_   = Kc;
     tauR_ = tempTauR;
     tauD_ = tauD / tSample_;
-
+*/
 }
 
 void PID::reset(void) {
@@ -251,8 +253,12 @@ float PID::compute() {
     //Compute the current slope of the input signal.
     float dMeas = (scaledPV - prevProcessVariable_) / tSample_;
     */
+    accError_ = (((error+antError)/2.0F) * tSample_) - ((-1.0F)*accError_);
 
-    accError_ = ((error * tSample_) - ((-1.0F)*accError_));
+    float derivative = (error - antError) / tSample_;
+
+    antError = error;
+    //accError_ = ( - ((-1.0F)*accError_));
 /*
     float scaledBias = 0.0;
     if (usingFeedForward) {
@@ -262,7 +268,7 @@ float PID::compute() {
     //Perform the PID calculation.
     //original controllerOutput_ = scaledBias + Kc_ * (error + (tauR_ * accError_) - (tauD_ * dMeas));
     //controllerOutput_ = scaledBias + Kc_ * (error + (tauR_ * accError_) - (tauD_ * dMeas));
-    controllerOutput_ = (KP_ * error) + (KI_ * accError_);
+    controllerOutput_ = (KP_ * error) + (KI_ * accError_) + (KD_ * derivative);
 
     //controllerOutput_=scaledBias + Kc*(error + (tauR_*accError) + (tauD_*dMeas));
 
@@ -283,7 +289,7 @@ float PID::compute() {
     //Scale the output from percent span back out to a real world number.
     //original return ((controllerOutput_ * outSpan_) + outMin_);
 
-    float saida = controllerOutput_ * (outSpan_*0,5) ;
+    float saida = controllerOutput_ * (outSpan_*0.5) ;
 
     //saida *= (-1.0F);
 
@@ -344,6 +350,6 @@ float PID::getIParam() {
 
 float PID::getDParam() {
 
-    return dParam_;
+    return KD_;
 
 }

@@ -12,7 +12,7 @@
 #include "PID.h"
 
 
-#define SAMPLES_QTD		20
+#define SAMPLES_QTD		40
 
 #define MAX_PWM			30.0F
 
@@ -46,13 +46,13 @@
 #define I_PITCH			2.5F
 #define D_PITCH			2.875F
 */
-#define P_PITCH			7.0F
-#define I_PITCH			4.0F
-#define D_PITCH			0.0F
+#define P_PITCH			2.0F
+#define I_PITCH			3.5F
+#define D_PITCH			0.1F
 
-#define P_ROLL			5.0F
-#define I_ROLL			4.0F
-#define D_ROLL			0.0F
+#define P_ROLL			1.3F
+#define I_ROLL			3.5F
+#define D_ROLL			0.02F
 
 #define P_ALTITUDE		4.571428571F
 #define I_ALTITUDE		2.083333333F

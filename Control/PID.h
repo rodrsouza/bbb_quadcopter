@@ -169,6 +169,8 @@ private:
     bool usingFeedForward;
     bool inAuto;
 
+    float antError;
+
     //Actual tuning parameters used in PID calculation.
     float Kc_;
     float tauR_;
@@ -177,7 +179,7 @@ private:
     //Raw tuning parameters.
     float KP_;
     float KI_;
-    float dParam_;
+    float KD_;
 
     //The point we want to reach.
     float setPoint_;

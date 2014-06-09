@@ -145,5 +145,23 @@ void Attitude::getEstimatedAttitude()
 		rollAcc = atan2f(static_cast<float>(acc_.X.data), static_cast<float>(acc_.Z.data)) * 180.0F / M_PI;
 		roll_ = (roll_ * 0.98F) + (rollAcc * 0.02F);
 	}
+
+	if(pitch_ > 180.0F)
+	{
+		pitch_ = 180.0F;
+	}
+	else if(pitch_ < -180.0F)
+	{
+		pitch_ = -180.0F;
+	}
+
+	if(roll_ > 180.0F)
+	{
+		roll_ = 180.0F;
+	}
+	else if(roll_ < -180.0F)
+	{
+		roll_ = -180.0F;
+	}
 }
 

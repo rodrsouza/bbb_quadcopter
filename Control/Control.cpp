@@ -116,6 +116,16 @@ void* Control::Run()
 
 	int counter = 0;
 
+	int i;
+
+	for(i=0; i < 12000; i++)
+	{
+		attitude->getEstimatedAttitude();
+
+		usleep(polling_interval);
+	}
+
+
 	while(!Should_Stop())
 	{
 		if(is_flying_)
@@ -131,7 +141,18 @@ void* Control::Run()
 			roll_pwm = roll_pid->compute();
 
 			//printf("pitch: %2.2f pitch_pwm: %2.2f\n", pitch, pitch_pwm);
-			printf("roll: %2.2f roll_pwm: %2.2f\n", roll, roll_pwm);
+			//printf("roll: %2.2f\n", roll);
+/*
+			if(counter==3000 && altitude_pwm <= 55.0F)
+			{
+				altitude_pwm++;
+				counter = 0;
+			}
+			else if(altitude_pwm <= 55.0F)
+			{
+				counter++;
+			}
+*/
 
 			//altitude_pwm = altitude_pid->compute();
 
@@ -180,7 +201,7 @@ void* Control::Run()
 		}
 		else
 		{
-			//idle state;
+			attitude->getEstimatedAttitude();
 		}
 
 		usleep(polling_interval);
